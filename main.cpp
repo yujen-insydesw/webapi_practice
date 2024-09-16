@@ -12,7 +12,7 @@
 
 //https://medium.com/@AlexanderObregon/building-restful-apis-with-c-4c8ac63fe8a7
 
-//(rm -rf * && cmake .. && make)
+//rm -rf * && cmake .. && make
 //./RestfulApi
 
 //curl -v http://localhost:8080
@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <unistd.h> // for sleep
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
 namespace http = beast::http;   // from <boost/beast/http.hpp>
@@ -162,11 +163,12 @@ public:
 private:
     void do_accept() {
         //std::cout << "enter" <<std::endl;
+        //acceptor_.accept(net::make_strand(ioc_), [this](beast::error_code ec, tcp::socket socket) {
         acceptor_.async_accept(net::make_strand(ioc_), [this](beast::error_code ec, tcp::socket socket) {
             if (!ec) {
                 std::make_shared<Session>(std::move(socket))->run();
             }
-            do_accept();
+            //do_accept();
         });
     }
 };
@@ -181,6 +183,8 @@ int main() {
         std::make_shared<Listener>(ioc, tcp::endpoint{address, port});//->run();
 
         ioc.run();
+
+        //sleep(30);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
