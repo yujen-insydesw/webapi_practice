@@ -16,16 +16,22 @@ Community and Documentation: nlohmann::json has extensive documentation and a la
 
 #pragma once
 
-#include "../models/person.hpp"
-
 #include <boost/asio.hpp>
-/*#include <boost/json.hpp>
+#if defined(BOOST_JSON)
+  #include <boost/json.hpp>
+#else
+  #include "nlohmann/json.hpp"
+#endif
 
-#include "nlohmann/json.hpp"
+#include "../models/person.hpp"
 
 class PersonSerializer {
 public:
+#if defined(BOOST_JSON)
   static boost::json::object toJson(const Person &person);
   static Person fromJson(const boost::json::object &obj);
+#else
+  static nlohmann::json toJson(const Person &person);
+  static Person fromJson(const nlohmann::json &obj);
+#endif
 };
-*/

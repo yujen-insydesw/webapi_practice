@@ -1,15 +1,15 @@
 #pragma once
 
-#include "context.hpp"
-#include "router.hpp"
-#include <boost/asio.hpp>
-#include <boost/beast.hpp>
-//#include <boost/json.hpp>
 #include <iostream>
 #include <map>
 #include <string>
 #include <thread>
 #include <vector>
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+
+#include "context.hpp"
+#include "router.hpp"
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
 namespace http = beast::http;   // from <boost/beast/http.hpp>
@@ -39,10 +39,13 @@ protected:
 
 public:
   BaseServer(short port, std::shared_ptr<Router> router)
-    : port(port), router(std::move(router)), acceptor_(net::make_strand(io_context))
+    : port(port)
+    , router(std::move(router))
+    , acceptor_(net::make_strand(io_context))
   {
     setting();
   }
+  virtual ~BaseServer();
 
 public:
   void setting() override;
@@ -55,12 +58,14 @@ class Server : public BaseServer {
 public:
   Server(short port, std::shared_ptr<Router> router)
     : BaseServer(port, router) {}
+  virtual ~Server() {}
 };
 
 class AsyncServer : public BaseServer {
 public:
   AsyncServer(short port, std::shared_ptr<Router> router)
     : BaseServer(port, router) {}
+  virtual ~AsyncServer() {}
 
 public:
   void run() override;

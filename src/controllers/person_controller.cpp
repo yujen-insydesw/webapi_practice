@@ -5,11 +5,19 @@ void PersonController::getPersons(Context &ctx) {
 
   try {
     auto persons = personService->getAllPersons();
-    //boost::json::array jsonArray;
+#if defined(BOOST_JSON)
+    boost::json::array jsonArray;
     for (const auto &person : persons) {
-      //jsonArray.push_back(PersonSerializer::toJson(person));
+      jsonArray.push_back(PersonSerializer::toJson(person));
     }
-    std::string jsonString;// = boost::json::serialize(jsonArray);
+    std::string jsonString = boost::json::serialize(jsonArray);
+#else
+    nlohmann::json jsonArray;
+    for (const auto &person : persons) {
+      jsonArray.push_back(PersonSerializer::toJson(person));
+    }
+    std::string jsonString = jsonArray.dump();
+#endif
     res.result(http::status::ok);
     res.body() = jsonString;
     res.set(http::field::content_type, "application/json");
@@ -25,9 +33,14 @@ void PersonController::createPerson(Context &ctx) {
   auto &res = ctx.getResponse();
 
   try {
-    //auto json = boost::json::parse(req.body());
-    //auto person = PersonSerializer::fromJson(json.as_object());
-    //personService->addPerson(person);
+#if defined(BOOST_JSON)
+    auto json = boost::json::parse(req.body());
+    auto person = PersonSerializer::fromJson(json.as_object());
+#else
+    auto json = nlohmann::json::parse(req.body());
+    auto person = PersonSerializer::fromJson(json);
+#endif
+    personService->addPerson(person);
     res.result(http::status::created);
     res.body() = "{\"success\": \"Person created.\"}";
     res.set(http::field::content_type, "application/json");
@@ -43,10 +56,14 @@ void PersonController::getPersonById(Context &ctx) {
   try {
     unsigned int id = std::atoi(ctx.getParam("id").c_str());
     auto person = personService->getPersonById(id);
-
     if (person) {
-      std::string jsonString;// =
-      //    boost::json::serialize(PersonSerializer::toJson(person.value()));
+#if defined(BOOST_JSON)
+      std::string jsonString = boost::json::serialize(PersonSerializer::toJson(*person)); // return optional 用法
+      //std::string jsonString = boost::json::serialize(PersonSerializer::toJson(person.value())); // return optional 用法
+#else
+      std::string jsonString = PersonSerializer::toJson(*person).dump(); // return optional 用法
+      //std::string jsonString = PersonSerializer::toJson(person.value()).dump(); // return optional 用法
+#endif
       res.result(http::status::ok);
       res.body() = jsonString;
       res.set(http::field::content_type, "application/json");

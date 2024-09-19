@@ -59,6 +59,20 @@ void BaseServer::setting() {
   }
 }
 
+BaseServer::~BaseServer() {
+    beast::error_code ec;
+
+    acceptor_.cancel(ec); // Cancel any pending operations
+    if (ec) {
+        std::cerr << "Cancel error: " << ec.message() << std::endl;
+    }
+
+    acceptor_.close(ec); // Close the acceptor
+    if (ec) {
+        std::cerr << "Close error: " << ec.message() << std::endl;
+    }
+}
+
 void BaseServer::run() {
   for (;;) {
     tcp::socket socket{io_context};
@@ -83,15 +97,33 @@ short BaseServer::getPort() { return port; }
 //
 
 void AsyncServer::run() {
+  std::cout << "run: " << std::endl;
   acceptor_.async_accept(net::make_strand(io_context),
     [this](beast::error_code ec, tcp::socket socket) {
+        std::cout << "callback: " << std::endl;
         if (!ec) {
-            session(std::move(socket));
+            BaseServer::session(std::move(socket));
         } else {
             std::cerr << "Accept error: " << ec.message() << std::endl;
         }
-        // Start accepting the next connection
-        run();
+        std::cout << "end: " << std::endl;
+        AsyncServer::run();
     });
 
+  // Run the io_context in a separate thread if desired
+  //std::thread t([&ioc]() { ioc.run(); });
+  io_context.run();
 }
+
+/*
+The io_context.run() function in Boost.Asio is a crucial part of the library’s asynchronous I/O operations. Here’s what it does:
+
+Event Loop: io_context.run() starts an event loop that processes all the asynchronous operations (handlers) that have been scheduled on the io_context. This loop continues running until there are no more handlers to execute or the io_context is stopped.
+
+Blocking Call: The run() function blocks the calling thread until all work has finished. This means it will keep the thread busy processing I/O events until there are no more events to handle or the io_context is explicitly stopped1.
+
+Thread Pool: Multiple threads can call io_context.run() to create a pool of threads that can concurrently process handlers. This is useful for improving performance in multi-threaded applications
+
+!!!
+ If you are not using any asynchronous operations in Boost.Asio, you don’t need to call io_context.run(). The io_context.run() function is specifically designed to process asynchronous tasks and events. If your application only uses synchronous operations, you can handle those operations directly without involving io_context.run().
+*/
