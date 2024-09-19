@@ -1,5 +1,8 @@
 #include <iostream>
-#include <thread>
+
+//#include <thread>
+    // Simulate server running for some time
+    //std::this_thread::sleep_for(std::chrono::seconds(3));
 
 #include "../include/controllers/person_controller.hpp"
 #include "../include/router.hpp"
@@ -10,7 +13,7 @@ int main(void) {
   try {
     auto router = std::make_shared<Router>();
     //auto server = ThreadDetachServer(6969, router);
-    auto server = AsyncServer(6969, router);
+    auto server = AsyncAcceptServer(6969, router);
     auto personService = std::make_shared<PersonService>();
     auto personController = std::make_shared<PersonController>(personService);
 
@@ -35,8 +38,6 @@ int main(void) {
     std::cout << "Server starting on port " << server.getPort() << std::endl;
     server.run();
 
-    // Simulate server running for some time
-    //std::this_thread::sleep_for(std::chrono::seconds(3));
 
   } catch (std::exception const &e) {
     std::cerr << "Error: " << e.what() << std::endl;

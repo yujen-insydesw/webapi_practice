@@ -22,7 +22,7 @@ using tcp = net::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 #define PATCH (http::verb::patch)
 #define DELETE (http::verb::delete_)
 
-class IServer : public std::enable_shared_from_this<IServer> {
+class IServer {
 public:
   virtual void setting() = 0;
   virtual void session(tcp::socket socket) = 0;
@@ -61,11 +61,11 @@ public:
   virtual ~ThreadDetachServer() {}
 };
 
-class AsyncServer : public BaseServer {
+class AsyncAcceptServer : public BaseServer {
 public:
-  AsyncServer(short port, std::shared_ptr<Router> router)
+  AsyncAcceptServer(short port, std::shared_ptr<Router> router)
     : BaseServer(port, router) {}
-  virtual ~AsyncServer() {}
+  virtual ~AsyncAcceptServer() {}
 
 public:
   void run() override;

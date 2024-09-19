@@ -112,7 +112,7 @@ short BaseServer::getPort() { return port; }
 
 //
 
-void AsyncServer::run() {
+void AsyncAcceptServer::run() {
   std::cout << "run: " << std::endl;
   
   // auto self(shared_from_this()); bad_weak_ptr
@@ -127,7 +127,7 @@ void AsyncServer::run() {
             std::cerr << "Accept error: " << ec.message() << std::endl;
         }
         std::cout << "end: " << std::endl;
-        AsyncServer::run();
+        AsyncAcceptServer::run();
     });
 
   io_context.run();
