@@ -18,6 +18,14 @@ void BaseServer::session(tcp::socket socket) {
       res.prepare_payload();
 
     http::write(socket, res);
+
+/* 沒有成功過 而且thread底下也不好使用 (要io.run())
+        http::async_read(socket_, buffer_, req_, [this, self](beast::error_code ec, std::size_t) {
+            if (!ec) {
+                do_write(handle_request(req_));
+            }
+        });*/
+
   } catch (std::exception const &e) {
     std::cerr << "Session error: " << e.what() << std::endl;
   }
@@ -60,6 +68,14 @@ void BaseServer::setting() {
 }
 
 BaseServer::~BaseServer() {
+  /*
+Key Points:
+Check Socket State: Ensure that the tcp::acceptor is not closed or invalid when async_accept is called. The acceptor should remain open and valid while accepting connections.
+Error Logging: Log detailed errors for open, bind, listen, and async_accept operations to identify and resolve issues promptly.
+Asynchronous Continuation: Always restart the asynchronous accept operation in the do_accept method after handling a connection or encountering an error.
+Thread Safety: Ensure that Boost.Asio operations and handlers are used in a thread-safe manner, especially when using net::make_strand.
+
+*/  
     beast::error_code ec;
 
     acceptor_.cancel(ec); // Cancel any pending operations
@@ -77,7 +93,7 @@ void BaseServer::run() {
   for (;;) {
     tcp::socket socket{io_context};
     acceptor_.accept(socket);
-    std::thread(&Server::session, this, std::move(socket)).detach();
+    std::thread(&BaseServer::session, this, std::move(socket)).detach();
   }
 
   /*
@@ -98,6 +114,10 @@ short BaseServer::getPort() { return port; }
 
 void AsyncServer::run() {
   std::cout << "run: " << std::endl;
+  
+  // auto self(shared_from_this()); bad_weak_ptr
+  // [this, self](beast::error_code ec, tcp::socket socket)
+
   acceptor_.async_accept(net::make_strand(io_context),
     [this](beast::error_code ec, tcp::socket socket) {
         std::cout << "callback: " << std::endl;
@@ -110,10 +130,9 @@ void AsyncServer::run() {
         AsyncServer::run();
     });
 
-  // Run the io_context in a separate thread if desired
-  //std::thread t([&ioc]() { ioc.run(); });
   io_context.run();
 }
+
 
 /*
 The io_context.run() function in Boost.Asio is a crucial part of the library’s asynchronous I/O operations. Here’s what it does:

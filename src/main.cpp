@@ -9,7 +9,7 @@
 int main(void) {
   try {
     auto router = std::make_shared<Router>();
-    //auto server = Server(6969, router);
+    //auto server = ThreadDetachServer(6969, router);
     auto server = AsyncServer(6969, router);
     auto personService = std::make_shared<PersonService>();
     auto personController = std::make_shared<PersonController>(personService);
@@ -36,7 +36,7 @@ int main(void) {
     server.run();
 
     // Simulate server running for some time
-    //std::this_thread::sleep_for(std::chrono::seconds(300));
+    //std::this_thread::sleep_for(std::chrono::seconds(3));
 
   } catch (std::exception const &e) {
     std::cerr << "Error: " << e.what() << std::endl;
@@ -132,4 +132,96 @@ cast
 
 https://stackoverflow.com/questions/28002/regular-cast-vs-static-cast-vs-dynamic-cast
 
+
+
+lambda
+
+#include <iostream>
+#include <functional>
+
+void processNumbers(std::function<int(int)> callback) {
+    int result = callback(8);
+    std::cout << "Result: " << result << std::endl;
+}
+
+或
+
+using Callback = std::function<void(int)>;
+
+void processNumbers(Callback callback) {...}
+
+
+int main()
+{
+    
+    int m = 1;
+    int n = 2;
+    int *pn = &n;
+    auto func1 = [&m, pn] (int a) {
+            return m + *pn + a;
+        };
+   std::cout << func1(4) << std::endl << m << std::endl << n << std::endl;
+   
+   processNumbers(func1);
+
+    std::cout<<"Hello World";
+
+    return 0;
+}
+
+
+class Session : public std::enable_shared_from_this<Session> {
+
+        auto self(shared_from_this());
+        auto sp = std::make_shared<http::response<http::string_body>>(std::move(res));
+        http::async_write(socket_, *sp,
+          [this, self, sp](beast::error_code ec, std::size_t) {
+            //socket_.shutdown(tcp::socket::shutdown_send, ec);
+            socket_.close();
+        });
+
+        this 跟 self 就可以使用 class 的成員 , sp 需要輸入
+
+
+
+
+
+async method with callback
+
+#include <iostream>
+#include <functional> 
+#include <future> // async
+#include <thread>
+
+void onTaskComplete(int result) {
+    std::cout << "Task completed with result: " << result << std::endl;
+}
+
+
+int main()
+{
+ 
+    int value = 10;
+
+ 
+    // Perform the task asynchronously
+    std::async(std::launch::async, 
+        [&value] {
+            // Simulate a long-running task
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            int result = value * 2; // Example computation
+    
+            // Call the callback with the result
+            onTaskComplete(result);
+        });
+
+
+    // Do other work while the task is running
+    std::cout << "Doing other work..." << std::endl;
+
+    // Wait for a key press to keep the program running
+    std::cin.get();
+ 
+    return 0;
+}
  */
