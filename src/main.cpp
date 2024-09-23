@@ -58,11 +58,19 @@ int main(void) {
       personController->deletePersonById(ctx);
     });
 
-    //auto server = ThreadDetachServer(6969, router);
-    auto server = AsyncAcceptServer(6969, router);    
+#ifndef SERVER_TYPE
+    #define SERVER_TYPE ASYNC_ACCEPT
+#endif
+#if SERVER_TYPE == ASYNC_ACCEPT
+    auto server = AsyncAcceptServer(6969, router);
+#elif SERVER_TYPE == BLOCK_ACCEPT
+    auto server = BlockAcceptServer(6969, router);
+#else
+    auto server = BlockAcceptServer(6969, router);
+#endif
     std::cout << "Server starting on port " << server.getPort() << std::endl;
     server.run();
-    
+
     Fence::initSema();
     signal(SIGINT, Fence::signalHandler);// Register signal handler for SIGINT (Ctrl+C)
     Fence::waitSignal();

@@ -5,7 +5,7 @@ void PersonController::getPersons(Context &ctx) {
 
   try {
     auto persons = personService->getAllPersons();
-#if defined(BOOST_JSON)
+#ifdef BOOST_JSON
     boost::json::array jsonArray;
     for (const auto &person : persons) {
       jsonArray.push_back(PersonSerializer::toJson(person));
@@ -33,7 +33,7 @@ void PersonController::createPerson(Context &ctx) {
   auto &res = ctx.getResponse();
 
   try {
-#if defined(BOOST_JSON)
+#ifdef BOOST_JSON
     auto json = boost::json::parse(req.body());
     auto person = PersonSerializer::fromJson(json.as_object());
 #else
@@ -57,7 +57,7 @@ void PersonController::getPersonById(Context &ctx) {
     unsigned int id = std::atoi(ctx.getParam("id").c_str());
     auto person = personService->getPersonById(id);
     if (person) {
-#if defined(BOOST_JSON)
+#ifdef BOOST_JSON
       std::string jsonString = boost::json::serialize(PersonSerializer::toJson(*person)); // return optional 用法
       //std::string jsonString = boost::json::serialize(PersonSerializer::toJson(person.value())); // return optional 用法
 #else

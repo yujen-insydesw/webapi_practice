@@ -1,6 +1,6 @@
 #include "../include/serializers/person_serializer.hpp"
 
-#if defined(BOOST_JSON)
+#ifdef BOOST_JSON
 
 boost::json::object PersonSerializer::toJson(const Person &person) {
   boost::json::object obj;

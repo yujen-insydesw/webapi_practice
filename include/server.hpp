@@ -46,11 +46,11 @@ public:
   short getPort() override;
 };
 
-class ThreadDetachServer : public BaseServer {
+class BlockAcceptServer : public BaseServer {
 public:
-  ThreadDetachServer(short port, std::shared_ptr<Router> router)
+  BlockAcceptServer(short port, std::shared_ptr<Router> router)
     : BaseServer(port, router) {}
-  virtual ~ThreadDetachServer() {}
+  virtual ~BlockAcceptServer() {}
 };
 
 class AsyncAcceptServer : public BaseServer {
