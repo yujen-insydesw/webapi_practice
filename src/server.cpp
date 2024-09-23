@@ -1,37 +1,10 @@
 #include "../include/server.hpp"
 
-void BaseServer::session(tcp::socket socket) {
-  try {
-    beast::flat_buffer buffer;
-    http::request<http::string_body> req;
-    http::read(socket, buffer, req);
-    http::response<http::string_body> res;
-    auto ctx = Context(req, res);
-
-    // Delegate the routing to the Router instance
-    if (!router->route(ctx)) {
-      // If no route matches, respond with Not Found
-      res.result(http::status::not_found);
-      res.body() = "Resource not found";
-    }
-    if (res.body().length() != 0)
-      res.prepare_payload();
-
-    http::write(socket, res);
-
-/* 沒有成功過 而且thread底下也不好使用 (要io.run())
-        http::async_read(socket_, buffer_, req_, [this, self](beast::error_code ec, std::size_t) {
-            if (!ec) {
-                do_write(handle_request(req_));
-            }
-        });*/
-
-  } catch (std::exception const &e) {
-    std::cerr << "Session error: " << e.what() << std::endl;
-  }
-}
-
-void BaseServer::setting() {
+BaseServer::BaseServer(short port, std::shared_ptr<Router> router)
+  : port(port)
+  , router(std::move(router))
+  , acceptor_(net::make_strand(io_context))
+{
   beast::error_code ec;
 
   auto const address = net::ip::make_address("0.0.0.0");
@@ -89,6 +62,30 @@ Thread Safety: Ensure that Boost.Asio operations and handlers are used in a thre
     }
 }
 
+void BaseServer::session(tcp::socket socket) {
+  try {
+    beast::flat_buffer buffer;
+    http::request<http::string_body> req;
+    http::read(socket, buffer, req);
+    http::response<http::string_body> res;
+    auto ctx = Context(req, res);
+
+    // Delegate the routing to the Router instance
+    if (!router->route(ctx)) {
+      // If no route matches, respond with Not Found
+      res.result(http::status::not_found);
+      res.body() = "Resource not found";
+    }
+    if (res.body().length() != 0)
+      res.prepare_payload();
+
+    http::write(socket, res);
+
+  } catch (std::exception const &e) {
+    std::cerr << "Session error: " << e.what() << std::endl;
+  }
+}
+
 void BaseServer::run() {
   for (;;) {
     tcp::socket socket{io_context};
@@ -113,26 +110,27 @@ short BaseServer::getPort() { return port; }
 //
 
 void AsyncAcceptServer::run() {
-  std::cout << "run: " << std::endl;
-  
-  // auto self(shared_from_this()); bad_weak_ptr
-  // [this, self](beast::error_code ec, tcp::socket socket)
-
-  acceptor_.async_accept(net::make_strand(io_context),
-    [this](beast::error_code ec, tcp::socket socket) {
-        std::cout << "callback: " << std::endl;
-        if (!ec) {
-            BaseServer::session(std::move(socket));
-        } else {
-            std::cerr << "Accept error: " << ec.message() << std::endl;
-        }
-        std::cout << "end: " << std::endl;
-        AsyncAcceptServer::run();
-    });
-
+  AsyncAcceptServer::async_run();
   io_context.run();
 }
 
+void AsyncAcceptServer::async_run() {
+  std::cout << "run: " << std::endl;
+  
+  acceptor_.async_accept(net::make_strand(io_context),
+    [this](beast::error_code ec, tcp::socket socket) {
+        std::cout << "callback: " << std::endl;
+        if (ec) {
+            std::cerr << "Accept error: " << ec.message() << std::endl;
+        }
+
+//            BaseServer::session(std::move(socket));
+        std::thread(&BaseServer::session, this, std::move(socket)).detach();
+
+        std::cout << "next: " << std::endl;
+        AsyncAcceptServer::async_run();
+    });
+}
 
 /*
 The io_context.run() function in Boost.Asio is a crucial part of the library’s asynchronous I/O operations. Here’s what it does:

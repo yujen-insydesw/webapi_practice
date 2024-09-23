@@ -24,7 +24,6 @@ using tcp = net::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 class IServer {
 public:
-  virtual void setting() = 0;
   virtual void session(tcp::socket socket) = 0;
   virtual void run() = 0;
   virtual short getPort() = 0;
@@ -38,17 +37,10 @@ protected:
   tcp::acceptor acceptor_;
 
 public:
-  BaseServer(short port, std::shared_ptr<Router> router)
-    : port(port)
-    , router(std::move(router))
-    , acceptor_(net::make_strand(io_context))
-  {
-    setting();
-  }
+  BaseServer(short port, std::shared_ptr<Router> router);
   virtual ~BaseServer();
 
 public:
-  void setting() override;
   void session(tcp::socket socket) override;
   void run() override;
   short getPort() override;
@@ -69,4 +61,6 @@ public:
 
 public:
   void run() override;
+private:
+  void async_run();
 };
